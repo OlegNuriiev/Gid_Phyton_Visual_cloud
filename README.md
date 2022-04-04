@@ -1,1 +1,0 @@
-# Gid_Phyton_Visual_cloud
