@@ -187,21 +187,26 @@ class Аpp_kiev(SamplePars):
         for item in items:
             availability = item.find('div', style='color: green').get_text(strip=True) if (
                 item.find('div', style='color: green')) else 'no'
-            if item.find('i', class_='fa-industry'):
-                if not item.find('i', class_='fa-industry').findParent():
-                    if not item.find('i', class_='fa-industry').findParent().findParent():
+
+            if item.find('i', class_='fas fa-industry'):
+                if not item.find('i', class_='fas fa-industry').findParent().findParent():
+                    if not item.find('i', class_='fas fa-industry').findParent():
                         manufacturer = 'no'
                     else:
-                        manufacturer = item.find('i', class_='fa-industry').findParent().findParent().get_text(strip=True)
+                        manufacturer = item.find('i', class_='fas fa-industry').findParent().get_text(
+                            strip=True)
                 else:
-                    manufacturer = item.find('i', class_='fa-industry').findParent().get_text(strip=True)
+                    manufacturer = item.find('i', class_='fas fa-industry').findParent().findParent().get_text(
+                        strip=True)
             else:
                 manufacturer = 'no'
+
             if item.find('div', style="color: black"):
                 if item.find('div', style="color: black").find('i', class_='fa-industry'):
                     size_data = 'no'
                 else:
-                    size_data = item.find('div', style="color: black").get_text(strip=True)
+                    size_data = item.find('div', style="color: black").findNext().next_element.next_element.get_text(
+                        strip=True)
             else:
                 size_data = 'no'
 
@@ -217,7 +222,7 @@ class Аpp_kiev(SamplePars):
 
     @staticmethod
     def save_file(items, path):
-        with open(path, 'w', newline='') as file:
+        with open(path, 'w', newline='', encoding='utf-8-sig') as file:
             writer = csv.writer(file, delimiter=';')
             writer.writerow(['Article', 'Availability', 'Size', 'Manufacturer', 'uah_price', 'link'])
             for item in items:
@@ -367,19 +372,19 @@ def list_other_Аpp_kiev():
     object2 = Аpp_kiev('https://app.kiev.ua/catalog/salniki/',
                        "Аpp_kiev_salniki", 1115)
     object2.parser()
-
+    
     object3 = Аpp_kiev('https://app.kiev.ua/catalog/vtulki/',
                        "Аpp_kiev_vtulki", 23)
     object3.parser()
-
+    
     object4 = Аpp_kiev('https://app.kiev.ua/catalog/koltsa_uplotnitelnye/',
                        "Аpp_kiev_koltsa_uplotnitelnye", 39)
     object4.parser()
-
+    
     object5 = Аpp_kiev('https://app.kiev.ua/catalog/manzhety/',
                        "Аpp_kiev_manzhety", 3)
     object5.parser()
-
+    
     object6 = Аpp_kiev('https://app.kiev.ua/catalog/shariki/',
                        "Аpp_kiev_shariki", 3)
     object6.parser()
@@ -404,3 +409,4 @@ def command_papser_subcategories_ATG():
 
 
 command_papser_subcategories_ATG()
+
