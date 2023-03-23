@@ -151,6 +151,81 @@ class GurService(SamplePars):
                 writer.writerow([item['title'], item['Availability'], item['uah_price'], item['link']])
 
 
+class Аpp_kiev(SamplePars):
+    def __init__(self, url, name, pagination_cd):
+        super().__init__(url, name, pagination_cd)
+
+    def parser(self):
+        attribute_pars = []
+        if self.get_html(self.url).status_code == 200:
+            for page in range(1, self.pagination_cd + 1):
+                print(f'Scraping page {page}')
+                url = self.url + "?PAGEN_1=" + str(page)
+                print(url)
+                html_save = self.get_html(url)
+                attribute_pars.extend(self.get_content(html_save.text))
+            self.save_file(attribute_pars, self.CSV)
+        else:
+            print('Error')
+
+    @staticmethod
+    def get_html(url, params=None):
+        headers = {
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                          "Chrome/108.0.0.0 Safari/537.36",
+            "accept": "*/*"}
+        r = requests.get(url, headers=headers)
+
+        return r
+
+    @staticmethod
+    def get_content(html):
+        global size_data
+        items = BeautifulSoup(html, 'html.parser').find('div', class_='col-lg-9').find_all('li',
+                                                                                           class_='list-group-item')
+        attribute = []
+        for item in items:
+            availability = item.find('div', style='color: green').get_text(strip=True) if (
+                item.find('div', style='color: green')) else 'no'
+            if item.find('i', class_='fa-industry'):
+                if not item.find('i', class_='fa-industry').findParent():
+                    if not item.find('i', class_='fa-industry').findParent().findParent():
+                        manufacturer = 'no'
+                    else:
+                        manufacturer = item.find('i', class_='fa-industry').findParent().findParent().get_text(strip=True)
+                else:
+                    manufacturer = item.find('i', class_='fa-industry').findParent().get_text(strip=True)
+            else:
+                manufacturer = 'no'
+            if item.find('div', style="color: black"):
+                if item.find('div', style="color: black").find('i', class_='fa-industry'):
+                    size_data = 'no'
+                else:
+                    size_data = item.find('div', style="color: black").get_text(strip=True)
+            else:
+                size_data = 'no'
+
+            attribute.append({
+                'title': item.find('h5', style='font-weight: bold;').find('a').get_text(strip=True),
+                'Availability': availability,
+                'Size': size_data,
+                'Manufacturer': manufacturer,
+                'uah_price': item.find('strong', class_='').get_text(strip=True).replace(' ', ''),
+                'link': item.find('h5', style='font-weight: bold;').find('a', class_='').get('href'),
+            })
+        return attribute
+
+    @staticmethod
+    def save_file(items, path):
+        with open(path, 'w', newline='') as file:
+            writer = csv.writer(file, delimiter=';')
+            writer.writerow(['Article', 'Availability', 'Size', 'Manufacturer', 'uah_price', 'link'])
+            for item in items:
+                writer.writerow(
+                    [item['title'], item['Availability'], item['Size'], item['Manufacturer'], item['uah_price'],
+                     item['link']])
+
+
 def list_other_gur():
     object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosy/gur', "GUR_pumps", 3)
     object1.parser()
@@ -284,6 +359,32 @@ def list_other_nasosy_reyki():
     object6.parser()
 
 
+def list_other_Аpp_kiev():
+    object1 = Аpp_kiev('https://app.kiev.ua/catalog/podshipniki/',
+                       "Аpp_kiev_podshipniki", 1780)
+    object1.parser()
+
+    object2 = Аpp_kiev('https://app.kiev.ua/catalog/salniki/',
+                       "Аpp_kiev_salniki", 1115)
+    object2.parser()
+
+    object3 = Аpp_kiev('https://app.kiev.ua/catalog/vtulki/',
+                       "Аpp_kiev_vtulki", 23)
+    object3.parser()
+
+    object4 = Аpp_kiev('https://app.kiev.ua/catalog/koltsa_uplotnitelnye/',
+                       "Аpp_kiev_koltsa_uplotnitelnye", 39)
+    object4.parser()
+
+    object5 = Аpp_kiev('https://app.kiev.ua/catalog/manzhety/',
+                       "Аpp_kiev_manzhety", 3)
+    object5.parser()
+
+    object6 = Аpp_kiev('https://app.kiev.ua/catalog/shariki/',
+                       "Аpp_kiev_shariki", 3)
+    object6.parser()
+
+
 def command_papser_subcategories_ATG():
     count = int(input())
     if count == 1:
@@ -296,6 +397,8 @@ def command_papser_subcategories_ATG():
         list_other_Seals()
     elif count == 5:
         list_other_nasosy_reyki()
+    elif count == 6:
+        list_other_Аpp_kiev()
     else:
         print("Not found")
 
