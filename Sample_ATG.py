@@ -1,6 +1,9 @@
 import csv
 import requests
+import ssl
 from bs4 import BeautifulSoup
+from urllib3 import poolmanager
+from wrvwer import TLSAdapter
 
 
 class SamplePars:
@@ -38,9 +41,17 @@ class SamplePars:
     def save_file(items, path):
         with open(path, 'w', newline='') as file:
             writer = csv.writer(file, delimiter=';')
-            writer.writerow(['Article', 'Availability', 'uah_price', 'link'])
+            writer.writerow(['id', 'Article', 'Description', 'Availability', 'Manufacturer', 'link', 'uah_price'])
             for item in items:
-                writer.writerow([item['title'], item['Availability'], item['uah_price'], item['link']])
+                writer.writerow([
+                    item['id'],
+                    item['title'],
+                    item['Description'],
+                    item['Availability'],
+                    item['Manufacturer'],
+                    item['link'],
+                    item['uah_price']
+                ])
 
 
 class AtgParsAgregats(SamplePars):
@@ -65,9 +76,12 @@ class AtgParsAgregats(SamplePars):
         for item in items:
             availability = 'Yes' if (item.find('div', class_='availability-triangle')) else 'No'
             attribute.append({
+                'id': str(item.find('button', {'onclick': True}).get('onclick')[len("wishlist.add('"):-len("');")]),
                 'title': item.find('div', class_='articlemodel').get_text(strip=True),
+                'Description': item.find('div', class_='caption').find('a', class_='').get_text(strip=True),
                 'Availability': availability,
-                'uah_price': item.find('p', class_='price').get_text(strip=True),
+                'Manufacturer': item.find('div', class_='manufacturer_product').get_text(strip=True),
+                'uah_price': item.find('p', class_='price').get_text(strip=True).replace('.', ',').replace(' грн*', ''),
                 'link': item.find('a', class_='').get('href'),
             })
         return attribute
@@ -117,12 +131,14 @@ class GurService(SamplePars):
             print('Error')
 
     @staticmethod
-    def get_html(url, params=None):
+    def get_html(url, params=None, TLSAdapter=TLSAdapter):
         headers = {
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/108.0.0.0 Safari/537.36",
+                          "Chrome/111.0.0.0 Safari/537.36",
             "accept": "*/*"}
-        r = requests.get(url, headers=headers)
+        session = requests.session()
+        session.mount('https://', TLSAdapter())
+        r = session.get(url, headers=headers)
 
         return r
 
@@ -134,8 +150,11 @@ class GurService(SamplePars):
         for item in items:
             availability = 'No' if (
                 item.find('div', class_='status table-cell').find('span', class_='stock-red')) else 'Yes'
+            title = item.find('span', class_='car-model').findNext().get_text(strip=True) if item.find('span',
+                                                                                                       class_='car-model') else item.find(
+                'a', class_='product-name').find('b').get_text(strip=True)
             attribute.append({
-                'title': item.find('span', class_='car-model').findNext().get_text(strip=True),
+                'title': title,
                 'Availability': availability,
                 'uah_price': item.find('div', class_='current-price').get_text(strip=True),
                 'link': item.find('a', class_='').get('href'),
@@ -235,11 +254,11 @@ def list_other_gur():
     object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosy/gur', "GUR_pumps", 3)
     object1.parser()
 
-    object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/gidravlicheskie', "StGUR", 22)
-    object3.parser()
-
-    object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/mehanicheskie', "StMEH", 5)
-    object4.parser()
+    # object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/gidravlicheskie', "StGUR", 22)
+    # object3.parser()
+    #
+    # object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/mehanicheskie', "StMEH", 5)
+    # object4.parser()
 
 
 def list_other_eps():
@@ -251,7 +270,7 @@ def list_other_eps():
 
 
 def list_other_Seals():
-    object4 = AtgParsSeals('https://atg-ua.com.ua/komplektuyushchie/salniki', "Seals", 28)
+    object4 = AtgParsSeals('https://atg-ua.com.ua/komplektuyushchie/salniki', "Seals", 29)
     object4.parser()
 
 
@@ -355,13 +374,17 @@ def list_other_emmetec():
 
 
 def list_other_nasosy_reyki():
-    object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/rulevaya-reika/',
-                         "GURS_reyki", 201)
+    object6 = GurService('https://nasosy-reyki.com.ua/tovary/',
+                         "GURS_other", 325)
     object6.parser()
 
-    object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/nasosy/',
-                         "GURS_nasosy", 99)
-    object6.parser()
+    # object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/rulevaya-reika/',
+    #                      "GURS_reyki", 216)
+    # object6.parser()
+    #
+    # object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/nasosy/',
+    #                      "GURS_nasosy", 101)
+    # object6.parser()
 
 
 def list_other_Аpp_kiev():
@@ -372,19 +395,19 @@ def list_other_Аpp_kiev():
     object2 = Аpp_kiev('https://app.kiev.ua/catalog/salniki/',
                        "Аpp_kiev_salniki", 1115)
     object2.parser()
-    
+
     object3 = Аpp_kiev('https://app.kiev.ua/catalog/vtulki/',
                        "Аpp_kiev_vtulki", 23)
     object3.parser()
-    
+
     object4 = Аpp_kiev('https://app.kiev.ua/catalog/koltsa_uplotnitelnye/',
                        "Аpp_kiev_koltsa_uplotnitelnye", 39)
     object4.parser()
-    
+
     object5 = Аpp_kiev('https://app.kiev.ua/catalog/manzhety/',
                        "Аpp_kiev_manzhety", 3)
     object5.parser()
-    
+
     object6 = Аpp_kiev('https://app.kiev.ua/catalog/shariki/',
                        "Аpp_kiev_shariki", 3)
     object6.parser()
@@ -409,4 +432,3 @@ def command_papser_subcategories_ATG():
 
 
 command_papser_subcategories_ATG()
-
