@@ -1,8 +1,6 @@
 import csv
 import requests
-import ssl
 from bs4 import BeautifulSoup
-from urllib3 import poolmanager
 from wrvwer import TLSAdapter
 
 
@@ -43,7 +41,7 @@ class SamplePars:
     def save_file(items, path):
         with open(path, 'w', newline='', encoding='utf-8-sig') as file:
             writer = csv.writer(file, delimiter=';')
-            writer.writerow(['id', 'Article', 'Description', 'Availability', 'Manufacturer', 'link', 'uah_price'])
+            writer.writerow(['id', 'Article', 'Description', 'Availability', 'Manufacturer', 'link', 'uah_price', 'img'])
             for item in items:
                 writer.writerow([
                     item['id'],
@@ -52,7 +50,8 @@ class SamplePars:
                     item['Availability'],
                     item['Manufacturer'],
                     item['link'],
-                    item['uah_price']
+                    item['uah_price'],
+                    # item['img']
                 ])
 
 
@@ -78,7 +77,7 @@ class AtgParsAgregats(SamplePars):
         for item in items:
 
             id = str(item.find('button', {'onclick': True}).get('onclick')[len("open_cart_modal('"):-len("');")]) \
-                if item.find('button', {'onclick': True}).get('onclick') else "No"
+                if item.find('button', {'onclick': True}) else "No"
 
             availability = 'No' if item.find \
                 ('button', class_='sliderProduct_link disabled_button flex j-c_center a-i_center') else 'Yes'
@@ -91,6 +90,8 @@ class AtgParsAgregats(SamplePars):
                 strip=True)) if item.find('ul', class_='sliderProduct_description').find('span') else item.find(
                 'ul', class_='sliderProduct_description').findNext().findNext().get_text(strip=True)
 
+            img = item.find('a', class_='sliderProduct_thumb img-position').find('img').get('data-src')
+
             attribute.append({
                 'id': id,
                 'title': item.find('p', class_='sliderProduct_article').get_text(strip=True),
@@ -99,6 +100,7 @@ class AtgParsAgregats(SamplePars):
                 'Manufacturer': manufacturer,
                 'uah_price': uah_price,
                 'link': item.find('a', class_='sliderProduct_thumb img-position').get('href'),
+                'img': img
             })
         return attribute
 
@@ -242,13 +244,13 @@ class Аpp_kiev(SamplePars):
 
 
 def list_other_gur():
-    object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosy/gur', "GUR_pumps", 6)
+    object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosi/gidropidsilyuvach-kerma/', "GUR_pumps", 6)
     object1.parser()
 
-    object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/gidravlicheskie', "StGUR", 48)
+    object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c53-gidravlichni/', "StGUR", 48)
     object3.parser()
 
-    object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/mehanicheskie', "StMEH", 12)
+    object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c55-mehanichni/', "StMEH", 12)
     object4.parser()
 
 
@@ -272,8 +274,8 @@ def list_other_emmetec():
     # object1 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c16-bachki-ta-krishki', "БАЧКИ_И_КРЫШКИ", 2)
     # object1.parser()
     #
-    # object2 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c33-vali', "ВАЛЫ", 10)
-    # object2.parser()
+    object2 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c33-vali', "ВАЛЫ", 10)
+    object2.parser()
     #
     # object3 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c15-datchiki-sensori-servotroniki',
     #                           "ДАТЧИКИ, СЕНСОРЫ, СЕРВО", 3)
@@ -362,11 +364,11 @@ def list_other_emmetec():
     # object29 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/shayby', "ШАЙБЫ", 1)
     # object29.parser()
     #
-    # object30 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/elektro-zapchasti', "ЭЛЕКТРО ЗАПЧАСТИ", 1)
+    # object30 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c20-remkomplekti', "РЕМКОМПЛЕКТИ", 10)
     # object30.parser()
 
-    object31 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/elektro-zapchasti', "КОМПЛЕКТУЮЧІ", 283)
-    object31.parser()
+    # object31 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/elektro-zapchasti', "КОМПЛЕКТУЮЧІ", 283)
+    # object31.parser()
 
 
 def list_other_nasosy_reyki():
