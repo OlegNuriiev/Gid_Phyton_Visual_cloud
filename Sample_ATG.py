@@ -141,7 +141,7 @@ class GurService(SamplePars):
         attribute = []
         for item in items:
             availability = 'No' if (
-                item.find('button', class_='sliderProduct_link disabled_button flex j-c_center a-i_center')) else 'Yes'
+                item.find('div', class_='status table-cell').find('span', class_='stock-red')) else 'Yes'
             title = item.find('span', class_='car-model').findNext().get_text(strip=True) if item.find('span',
                                                                                                        class_='car-model') else item.find(
                 'a', class_='product-name').find('b').get_text(strip=True)
@@ -157,7 +157,7 @@ class GurService(SamplePars):
     @staticmethod
     def save_file(items, path):
         with open(path, 'w', newline='', encoding='utf-8-sig') as file:
-            writer = csv.writer(file, delimiter=',')
+            writer = csv.writer(file, delimiter=';')
             writer.writerow(['Article', 'Availability', 'uah_price', 'link'])
             for item in items:
                 writer.writerow([item['title'], item['Availability'], item['uah_price'], item['link']])
