@@ -59,48 +59,83 @@ class AtgParsAgregats(SamplePars):
     def __init__(self, url, name, pagination_cd):
         super().__init__(url, name, pagination_cd)
 
-    def parser(self):
+    def parser1(self):
         attribute_pars = []
+        AtgParsAgregats.parser2(self)
+        for url1 in self.get_data('articles_urls.txt'):
+            print(url1)
+            html_links_save = self.get_html(url1, params=None).text
+            attribute_pars.extend(self.get_content(html_links_save))
+        self.save_file(attribute_pars, self.CSV)
+
+    def parser2(self):
+        atr = []
         if self.get_html(self.url).status_code == 200:
             for page in range(1, self.pagination_cd + 1):
                 print(f'Scraping page {page}')
                 html_save = self.get_html(self.url, params={'page': page})
-                attribute_pars.extend(self.get_content(html_save.text))
-            self.save_file(attribute_pars, self.CSV)
+                atr.extend(self.collection_of_links(html_save.text))
+                self.save_links(atr)
         else:
             print('Error')
 
     @staticmethod
-    def get_content(html):
-        items = BeautifulSoup(html, 'html.parser').find_all('div', class_='boxCategory_li')
-        attribute = []
-        for item in items:
+    def get_data(file_links):
+        with open(file_links) as file:
+            urls_list = [line.strip() for line in file.readlines()]
 
+        return urls_list
+
+    @staticmethod
+    def collection_of_links(html):
+        items = BeautifulSoup(html, 'html.parser').find_all('div', class_='boxCategory_li')
+        atr = []
+
+        for item in items:
+            link = item.find('a', class_='sliderProduct_thumb img-position').get('href')
+            atr.append(link)
+        return atr
+
+    @staticmethod
+    def save_links(items):
+        with open('articles_urls.txt', 'w') as file:
+            for url in items:
+                file.write(f'{url}\n')
+
+    @staticmethod
+    def get_content(html):
+        soup = BeautifulSoup(html, 'lxml')
+        attribute = []
+        items = soup.find_all('div', class_='listAnalogues_li flex j-c_between')
+        for item in items:
             id = str(item.find('button', {'onclick': True}).get('onclick')[len("open_cart_modal('"):-len("');")]) \
                 if item.find('button', {'onclick': True}) else "No"
 
             availability = 'No' if item.find \
-                ('button', class_='sliderProduct_link disabled_button flex j-c_center a-i_center') else 'Yes'
+                ('button', class_='listAnalogues_button disabled_button') else 'Yes'
 
-            uah_price = item.find('i', class_='currenySymbol').previous_sibling.get_text(strip=True).replace \
-                ('.', ',') if item.find('i', class_='currenySymbol') else item.find \
-                ('div', class_='sliderProduct_boxPrice').get_text(strip=True)
+            uah_price = item.find('p', class_='listAnalogues_new-price').next_element.get_text(strip=True).replace \
+                ('.', ',') if item.find('p', class_='listAnalogues_new-price') else 0
 
-            manufacturer = str(item.find('ul', class_='sliderProduct_description').find('span').next_sibling.get_text(
-                strip=True)) if item.find('ul', class_='sliderProduct_description').find('span') else item.find(
-                'ul', class_='sliderProduct_description').findNext().findNext().get_text(strip=True)
+            manufacturer = str(item.find('ul', class_='listAnalogues_list').find('span').next_sibling.get_text(
+                strip=True)) if item.find('ul', class_='listAnalogues_list').find('span') else item.find(
+                'ul', class_='listAnalogues_list').findNext().findNext().get_text(strip=True)
 
-            img = item.find('a', class_='sliderProduct_thumb img-position').find('img').get('data-src')
+            description = (item.find('div', class_='listAnalogues_center').find('a').get_text(strip=True)) if \
+                item.find('div', class_='listAnalogues_center').find('a') else \
+                item.find('div', class_='listAnalogues_center').find('h3').get_text(strip=True)
+
+            link = item.find('div', class_='listAnalogues_center').find('a').get('href') if \
+                item.find('div', class_='listAnalogues_center').find('a') else 'No'
 
             attribute.append({
                 'id': id,
-                'title': item.find('p', class_='sliderProduct_article').get_text(strip=True),
-                'Description': item.find('div', class_='sliderProduct_left').find('a').get_text(strip=True),
+                'title': item.find('p', class_='listAnalogues_article').get_text(strip=True),
+                'Description': description,
                 'Availability': availability,
                 'Manufacturer': manufacturer,
                 'uah_price': uah_price,
-                'link': item.find('a', class_='sliderProduct_thumb img-position').get('href'),
-                'img': img
+                'link': link,
             })
         return attribute
 
@@ -109,7 +144,7 @@ class GurService(SamplePars):
     def __init__(self, url, name, pagination_cd):
         super().__init__(url, name, pagination_cd)
 
-    def parser(self):
+    def parser1(self):
         attribute_pars = []
         if self.get_html(self.url).status_code == 200:
             for page in range(1, self.pagination_cd + 1):
@@ -244,145 +279,145 @@ class Аpp_kiev(SamplePars):
 
 
 def list_other_gur():
-    object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosi/gidropidsilyuvach-kerma/', "GUR_pumps", 6)
-    object1.parser()
+    object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosi/gidropidsilyuvach-kerma/', "GUR_pumps", 2)
+    object1.parser1()
 
-    object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c53-gidravlichni/', "StGUR", 48)
-    object3.parser()
-
-    object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c55-mehanichni/', "StMEH", 12)
-    object4.parser()
+    # object3 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c53-gidravlichni/', "StGUR", 48)
+    # object3.parser1()
+    #
+    # object4 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/c55-mehanichni/', "StMEH", 12)
+    # object4.parser1()
 
 
 def list_other_eps():
     object1 = AtgParsAgregats('https://atg-ua.com.ua/nasosy/egur', "EPS_pumps", 5)
-    object1.parser()
+    object1.parser1()
 
     object2 = AtgParsAgregats('https://atg-ua.com.ua/rulevye-reyki/elektricheskie', "StEPS", 13)
-    object2.parser()
+    object2.parser1()
 
     object3 = AtgParsAgregats('https://atg-ua.com.ua/elektropidsilyuvachi', "ELB_EPS", 3)
-    object3.parser()
+    object3.parser1()
 
 
 def list_other_Seals():
     object4 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c44-salniki', "Seals", 70)
-    object4.parser()
+    object4.parser1()
 
 
 def list_other_emmetec():
-    # object1 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c16-bachki-ta-krishki', "БАЧКИ_И_КРЫШКИ", 2)
-    # object1.parser()
-    #
-    object2 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c33-vali', "ВАЛЫ", 10)
-    object2.parser()
-    #
-    # object3 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c15-datchiki-sensori-servotroniki',
-    #                           "ДАТЧИКИ, СЕНСОРЫ, СЕРВО", 3)
-    # object3.parser()
-    #
-    # object4 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/zaglushki', "ЗАГЛУШКИ", 1)
-    # object4.parser()
-    #
-    # object5 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_495', "ЗАЩИТНЫЕ КРЫШКИ",
-    #                           2)
-    # object5.parser()
-    #
-    # object6 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/kolpachki', "КОЛПАЧКИ, ЗАЩИТНЫЕ МАНЖЕТЫ", 1)
-    # object6.parser()
-    #
-    # object7 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/kolca-rezino-metal', "КОЛЬЦА РЕЗИНО-МЕТАЛ", 1)
-    # object7.parser()
-    #
-    # object8 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_497',
-    #                           "КОНТАКТНАЯ ГРУППА, РАЗЬЕМЫ", 3)
-    # object8.parser()
-    #
-    # object9 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_496', "КОРПУСА", 3)
-    # object9.parser()
-    #
-    # object10 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/krestoviny', "КРЕСТОВИНЫ", 1)
-    # object10.parser()
-    #
-    # object11 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_498',
-    #                            "МОТОРЫ, РЕДУКТОРА", 3)
-    # object11.parser()
-    #
-    # object12 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/podshipniki', "ПОДШИПНИКИ", 2)
-    # object12.parser()
-    #
-    # object13 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/porshni', "ПОРШНИ", 1)
-    # object13.parser()
-    #
-    # object14 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_494', "ПРОВОДА", 1)
-    # object14.parser()
-    #
-    # object15 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/pylniki-tyag', "ПЫЛЬНИКИ ТЯГ", 2)
-    # object15.parser()
-    #
-    # object16 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/raznoe', "РАЗНОЕ", 1)
-    # object16.parser()
-    #
-    # object17 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/raspredelitel', "РАСПРЕДЕЛИТЕЛЬ", 1)
-    # object17.parser()
-    #
-    # object18 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/regulirovochnye-vtulki',
-    #                            "РЕГУЛИРОВОЧНЫЕ ВТУЛКИ", 2)
-    # object18.parser()
-    #
-    # object19 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/rezinovye-o-ring', "РЕЗИНОВЫЕ O-RING", 8)
-    # object19.parser()
-    #
-    # object20 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_493', "РЕМНИ", 1)
-    # object20.parser()
-    #
-    # object21 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/saylentbloki', "САЙЛЕНТБЛОКИ", 1)
-    # object21.parser()
-    #
-    # object22 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/teflonovye-kolca', "ТЕФЛОНОВЫЕ КОЛЬЦА", 4)
-    # object22.parser()
-    #
-    # object23 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_492', "ТОРСИОНЫ", 2)
-    # object23.parser()
-    #
-    # object24 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/trubki', "ТРУБКИ", 2)
-    # object24.parser()
-    #
-    # object25 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/tyagi', "ТЯГИ", 1)
-    # object25.parser()
-    #
-    # object26 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/uplotniteli-rezino-metall',
-    #                            "УПЛОТНИТЕЛИ РЕЗИНО-МЕТАЛЛ", 2)
-    # object26.parser()
-    #
-    # object27 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/fole-vstavka', "ФОЛЬЕ ВСТАВКА", 2)
-    # object27.parser()
-    #
-    # object28 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/homuty', "ХОМУТЫ", 1)
-    # object28.parser()
-    #
-    # object29 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/shayby', "ШАЙБЫ", 1)
-    # object29.parser()
-    #
-    # object30 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c20-remkomplekti', "РЕМКОМПЛЕКТИ", 10)
-    # object30.parser()
+    object1 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c16-bachki-ta-krishki', "БАЧКИ_И_КРЫШКИ", 2)
+    object1.parser1()
 
-    # object31 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/elektro-zapchasti', "КОМПЛЕКТУЮЧІ", 283)
-    # object31.parser()
+    object2 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c33-vali', "ВАЛЫ", 10)
+    object2.parser1()
+
+    object3 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c15-datchiki-sensori-servotroniki',
+                              "ДАТЧИКИ, СЕНСОРЫ, СЕРВО", 3)
+    object3.parser1()
+
+    object4 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/zaglushki', "ЗАГЛУШКИ", 1)
+    object4.parser1()
+
+    object5 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_495', "ЗАЩИТНЫЕ КРЫШКИ",
+                              2)
+    object5.parser1()
+
+    object6 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/kolpachki', "КОЛПАЧКИ, ЗАЩИТНЫЕ МАНЖЕТЫ", 1)
+    object6.parser1()
+
+    object7 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/kolca-rezino-metal', "КОЛЬЦА РЕЗИНО-МЕТАЛ", 1)
+    object7.parser1()
+
+    object8 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_497',
+                              "КОНТАКТНАЯ ГРУППА, РАЗЬЕМЫ", 3)
+    object8.parser1()
+
+    object9 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_496', "КОРПУСА", 3)
+    object9.parser1()
+
+    object10 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/krestoviny', "КРЕСТОВИНЫ", 1)
+    object10.parser1()
+
+    object11 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_498',
+                               "МОТОРЫ, РЕДУКТОРА", 3)
+    object11.parser1()
+
+    object12 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/podshipniki', "ПОДШИПНИКИ", 2)
+    object12.parser1()
+
+    object13 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/porshni', "ПОРШНИ", 1)
+    object13.parser1()
+
+    object14 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_494', "ПРОВОДА", 1)
+    object14.parser1()
+
+    object15 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/pylniki-tyag', "ПЫЛЬНИКИ ТЯГ", 2)
+    object15.parser1()
+
+    object16 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/raznoe', "РАЗНОЕ", 1)
+    object16.parser1()
+
+    object17 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/raspredelitel', "РАСПРЕДЕЛИТЕЛЬ", 1)
+    object17.parser1()
+
+    object18 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/regulirovochnye-vtulki',
+                               "РЕГУЛИРОВОЧНЫЕ ВТУЛКИ", 2)
+    object18.parser1()
+
+    object19 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/rezinovye-o-ring', "РЕЗИНОВЫЕ O-RING", 8)
+    object19.parser1()
+
+    object20 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_493', "РЕМНИ", 1)
+    object20.parser1()
+
+    object21 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/saylentbloki', "САЙЛЕНТБЛОКИ", 1)
+    object21.parser1()
+
+    object22 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/teflonovye-kolca', "ТЕФЛОНОВЫЕ КОЛЬЦА", 4)
+    object22.parser1()
+
+    object23 = AtgParsAgregats('https://atg-ua.com.ua/index.php?route=product/category&path=438_492', "ТОРСИОНЫ", 2)
+    object23.parser1()
+
+    object24 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/trubki', "ТРУБКИ", 2)
+    object24.parser1()
+
+    object25 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/tyagi', "ТЯГИ", 1)
+    object25.parser1()
+
+    object26 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/uplotniteli-rezino-metall',
+                               "УПЛОТНИТЕЛИ РЕЗИНО-МЕТАЛЛ", 2)
+    object26.parser1()
+
+    object27 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/fole-vstavka', "ФОЛЬЕ ВСТАВКА", 2)
+    object27.parser1()
+
+    object28 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/homuty', "ХОМУТЫ", 1)
+    object28.parser1()
+
+    object29 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/shayby', "ШАЙБЫ", 1)
+    object29.parser1()
+
+    object30 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/c20-remkomplekti', "РЕМКОМПЛЕКТИ", 10)
+    object30.parser1()
+
+    object31 = AtgParsAgregats('https://atg-ua.com.ua/komplektuyushchie/elektro-zapchasti', "КОМПЛЕКТУЮЧІ", 283)
+    object31.parser1()
 
 
 def list_other_nasosy_reyki():
     object6 = GurService('https://nasosy-reyki.com.ua/tovary/',
                          "GURS_other", 322)
-    object6.parser()
+    object6.parser1()
 
     object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/rulevaya-reika/',
                          "GURS_reyki", 216)
-    object6.parser()
+    object6.parser1()
 
     object6 = GurService('https://nasosy-reyki.com.ua/ru/tovary/nasosy/',
                          "GURS_nasosy", 101)
-    object6.parser()
+    object6.parser1()
 
 
 def list_other_Аpp_kiev():
