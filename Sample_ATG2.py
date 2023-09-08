@@ -61,6 +61,14 @@ class AtgParsAgregats(SamplePars):
 
     def parser1(self):
         attribute_pars = []
+        AtgParsAgregats.parser2(self)
+        for url1 in self.get_data('articles_urls.txt'):
+            print(url1)
+            html_links_save = self.get_html(url1, params=None).text
+            attribute_pars.extend(self.get_content(html_links_save))
+        self.save_file(attribute_pars, self.CSV)
+
+    def parser2(self):
         atr = []
         if self.get_html(self.url).status_code == 200:
             for page in range(1, self.pagination_cd + 1):
@@ -68,15 +76,8 @@ class AtgParsAgregats(SamplePars):
                 html_save = self.get_html(self.url, params={'page': page})
                 atr.extend(self.collection_of_links(html_save.text))
                 self.save_links(atr)
-                for url1 in self.get_data('articles_urls.txt'):
-                    print(url1)
-                    html_links_save = self.get_html(url1, params=None).text
-                    attribute_pars.extend(self.get_content(html_links_save))
-                    print(attribute_pars)
-            self.save_file(attribute_pars, self.CSV)
         else:
             print('Error')
-
 
     @staticmethod
     def get_data(file_links):
