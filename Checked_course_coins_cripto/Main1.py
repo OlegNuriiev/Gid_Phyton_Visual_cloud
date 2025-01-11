@@ -41,7 +41,7 @@ def get_crypto_prices():
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = "Привет! Я мониторю курс следующих криптовалют:\n" + ", ".join(
-        CRYPTOCURRENCIES) + "\nКурс будет отправляться каждую минуту."
+        CRYPTOCURRENCIES) + "\nКурс будет отправляться раз в 6 часов."
     await update.message.reply_text(message)
 
 # Отправка курса в Telegram
