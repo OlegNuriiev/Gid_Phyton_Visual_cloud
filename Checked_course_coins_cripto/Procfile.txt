@@ -1,1 +1,1 @@
-python3 Checked_course_coins_cripto/Main1.py
+web: python Checked_course_coins_cripto/Main1.py
