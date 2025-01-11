@@ -76,7 +76,7 @@ def schedule_crypto_updates(application):
 
     # Регулярная отправка курса каждую минуту
     application.job_queue.run_repeating(lambda context: asyncio.create_task(send_scheduled_prices(application)),
-                                        interval=60, first=0)
+                                        interval=360, first=0)
 
     logger.info("Планировщик настроен.")
 
